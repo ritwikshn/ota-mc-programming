@@ -4,3 +4,10 @@ Source-MC/.metadata/
 Source-MC/sci_ex4_echoback/CPU1_FLASH/
 Source-MC/sci_ex4_echoback/CPU1_RAM/
 Reference-Projects/
+*.iml
+Source-Android/.gradle/
+Source-Android/.idea/
+Source-Android/local.properties
+Source-Android/app/build/
+Source-Android/build/
+
