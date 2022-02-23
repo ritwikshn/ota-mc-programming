@@ -45,6 +45,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     private boolean hexEnabled = false;
     private boolean pendingNewline = false;
     private String newline = TextUtil.newline_crlf;
+    private String null_char = "\0";
 
     /*
      * Lifecycle
@@ -134,6 +135,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         sendText.addTextChangedListener(hexWatcher);
         sendText.setHint(hexEnabled ? "HEX mode" : "");
 
+
+
         sendText1 = view.findViewById(R.id.send_text1);
         hexWatcher = new TextUtil.HexWatcher(sendText1);
         hexWatcher.enable(hexEnabled);
@@ -145,9 +148,8 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         View sendBtn = view.findViewById(R.id.send_btn);
         sendBtn.setOnClickListener(v -> {
             send(sendText.getText().toString());
-            send(sendText.getText().toString());
+            send(sendText1.getText().toString());
         });
-//        sendBtn.setOnClickListener(v -> send(sendText1.getText().toString()));
         return view;
     }
 
@@ -210,6 +212,13 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         service.disconnect();
     }
 
+// can use this to convert from float to byte array
+//    public static byte[] floatToByteArray(float value) {
+//        int intBits =  Float.floatToIntBits(value);
+//        return new byte[] {
+//                (byte) (intBits >> 24), (byte) (intBits >> 16), (byte) (intBits >> 8), (byte) (intBits) };
+//    }
+
     private void send(String str) {
         if(connected != Connected.True) {
             Toast.makeText(getActivity(), "not connected", Toast.LENGTH_SHORT).show();
@@ -226,7 +235,11 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                 data = TextUtil.fromHexString(msg);
             } else {
                 msg = str;
-                data = (str + newline).getBytes();
+                /// str -> written in the field
+                // 1. convert str to float.
+                // 2. convert this float to byte array and assign to data variable
+                // data = floatToByteArray(float value)
+                data = (str + null_char).getBytes();
             }
             SpannableStringBuilder spn = new SpannableStringBuilder(msg + '\n');
             spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorSendText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

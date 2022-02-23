@@ -210,7 +210,7 @@ void main(void)
         //
         // Echo back the characters.
         SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, strlen(msg));
-        SCI_writeCharArray(SCIA_BASE, (uint16_t*)s->arr, (s->ptr)/2);
+        SCI_writeCharArray(SCIA_BASE, (uint16_t*)s->arr, (s->ptr));
 //        SCI_writeCharBlockingFIFO(SCIA_BASE, receivedChar);
 
 
