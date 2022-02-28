@@ -110,9 +110,17 @@ void append(string * str, char c){
     str->arr[str->ptr] = 0;
 }
 
-//void print(string * str){
-//    printf("%s\n", str->arr);
-//}
+float SCI_readFloatBlockingFIFO(){
+    unsigned char byte[4];
+    for(int i = 0; i<4; i++){
+        byte[i] = SCI_readCharBlockingFIFO(SCIA_BASE);
+        rxStatus = SCI_getRxStatus(SCIA_BASE);
+        if((rxStatus & SCI_RXSTATUSERROR) != 0){
+            ESTOP0;
+        }
+    }
+    return *((float *)byte);
+}
 
 uint16_t loopCounter = 0;
 uint16_t receivedChar;
@@ -186,31 +194,21 @@ void main(void)
     SCI_lockAutobaud(SCIA_BASE);
 #endif
 
+    float receivedValue;
+    while(1){
+        receivedValue = SCI_readFloatBlockingFIFO();
+//        SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, strlen(msg));
+        SCI_writeCharArray(SCIA_BASE, , 4);
+    }
 
-    for(;;)
-    {
-        string *s = new_string();
-        do{
-            receivedChar = SCI_readCharBlockingFIFO(SCIA_BASE);
-            rxStatus = SCI_getRxStatus(SCIA_BASE);
-            if((rxStatus & SCI_RXSTATUS_ERROR) != 0)
-            {
-                //
-                //If Execution stops here there is some error
-                //Analyze SCI_getRxStatus() API return value
-                //
-                ESTOP0;
-             }
-            if(receivedChar != 0) append(s, receivedChar);
-        }while(receivedChar != 0);
 
 
 
 
         //
         // Echo back the characters.
-        SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, strlen(msg));
-        SCI_writeCharArray(SCIA_BASE, (uint16_t*)s->arr, (s->ptr));
+
+
 //        SCI_writeCharBlockingFIFO(SCIA_BASE, receivedChar);
 
 
