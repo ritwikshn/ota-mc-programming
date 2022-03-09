@@ -122,8 +122,9 @@ float SCI_readFloatBlockingFIFO(){
     return *((float *)byte);
 }
 
-uint16_t loopCounter = 0;
-uint16_t receivedChar;
+void floatToCharArray(char * arr, float x){
+    *((float *)(arr)) = x;
+}
 //
 // Main
 //
@@ -195,10 +196,12 @@ void main(void)
 #endif
 
     float receivedValue;
+    char arr[4];
     while(1){
         receivedValue = SCI_readFloatBlockingFIFO();
 //        SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, strlen(msg));
-        SCI_writeCharArray(SCIA_BASE, , 4);
+        arr = floatTocharArray(arr, receivedValue);
+        SCI_writeCharArray(SCIA_BASE, (uint16_t*)arr, 4);
     }
 
 
