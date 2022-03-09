@@ -28,6 +28,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import java.nio.ByteBuffer;
+
 public class TerminalFragment extends Fragment implements ServiceConnection, SerialListener {
 
     private enum Connected { False, Pending, True }
@@ -234,12 +236,17 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
                 msg = sb.toString();
                 data = TextUtil.fromHexString(msg);
             } else {
+                float f_msg;
                 msg = str;
+                f_msg= Float.parseFloat(msg);
+                data = ByteBuffer.allocate(4).putFloat(f_msg).array();
+
+
                 /// str -> written in the field
                 // 1. convert str to float.
                 // 2. convert this float to byte array and assign to data variable
                 // data = floatToByteArray(float value)
-                data = (str + null_char).getBytes();
+              //  data = (str + null_char).getBytes();
             }
             SpannableStringBuilder spn = new SpannableStringBuilder(msg + '\n');
             spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorSendText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
