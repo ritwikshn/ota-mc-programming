@@ -75,6 +75,8 @@
 #include "driverlib.h"
 #include "device.h"
 #include<stdlib.h>
+#include<stdio.h>
+
 //
 // Defines
 //
@@ -85,19 +87,21 @@
 // Globals
 //
 
+// union Float to handle casting of byte arrays to float
 typedef union _Float{
     float f;
     unsigned long bytes;
 } Float;
-struct string{
+
+// string datatype adapted from cpp library
+// supports append operation
+typedef struct _string{
     char * arr;
     int sz;
     int ptr;
-};
+} string;
 
-typedef struct string string;
-
-
+// create a new string
 string * new_string(){
     string * ret = malloc(1*sizeof(string));
     ret->sz = 1;
@@ -106,6 +110,7 @@ string * new_string(){
     return ret;
 }
 
+// append character to a string
 void append(string * str, char c){
     if(str->ptr == str-> sz){
         str->sz *= 2;
@@ -115,12 +120,13 @@ void append(string * str, char c){
     str->arr[str->ptr] = 0;
 }
 
-// represent each byte in the byte arr in its integer value
-// and append to the intarr
+
+// represent each byte in the byte arr in its ascii value ( 0 -255 )
+// and append this value to the intarr
 void byteArrayToIntArray(unsigned char * bytearr, unsigned  char * intarr){
     int i = 3, j = 15;
     for(; i>-1; i--){
-        unsigned int x = (unsigned int)bytearr[i];
+        unsigned int x = (bytearr[i] & 0xFF);
         int k = 0;
         for(; k<3; k++){
             intarr[j--] = (unsigned int)'0' + x%10;
@@ -130,6 +136,8 @@ void byteArrayToIntArray(unsigned char * bytearr, unsigned  char * intarr){
     }
 }
 
+// read floats through SCI
+// reads 4 bytes at a time and cast and stores to the receivedValue Float variable.
 void SCI_readFloatBlockingFIFO(unsigned char * intarr, Float * receivedValue){
     int i = 0;
     unsigned char byte[4];
@@ -146,6 +154,8 @@ void SCI_readFloatBlockingFIFO(unsigned char * intarr, Float * receivedValue){
     receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 }
 
+// represent first 4 significant digits of the given float value
+// use for preliminary verification purposes.
 void floatToDigits(unsigned char * arr, Float * receivedValue){
     float x = receivedValue->f;
     if(x < 0) x*=-1;
@@ -161,16 +171,23 @@ void floatToDigits(unsigned char * arr, Float * receivedValue){
        xi/=10;
    }
 }
+
+// copy the 4 bytes stored in fvalue into byteArr
+void floatToByteArray(Float * fvalue, unsigned char * byteArr){
+//    memcpy(byteArr, &(fvalue->f), sizeof(byteArr));
+    unsigned long copy = fvalue->bytes, mask = 0xFF;
+    int i = 3;
+    for(; i>-1; i--){
+        byteArr[i] = (copy >> 8*(3-i) & mask);
+    }
+}
+
+
 //
 // Main
 //
-//float receivedValue = 1.24;''
 void main(void)
 {
-//
-//    unsigned char *msg = "You Sent : ";
-//
-
     //
     // Configure PLL, disable WD, enable peripheral clocks.
     //
@@ -233,13 +250,34 @@ void main(void)
 #endif
 
     Float receivedValue;
-    unsigned char arr[4];
+    unsigned char byteArr[4];
     unsigned char intarr[16];
     while(1){
+        // read float through SCI
         SCI_readFloatBlockingFIFO(intarr, &receivedValue);
-        floatToDigits(arr, &receivedValue);
+
+        // convert to digits for preliminary verification -
+//        floatToDigits(arr, &receivedValue);
 //        SCI_writeCharArray(SCIA_BASE, (uint16_t*)intarr, 16);
-        SCI_writeCharArray(SCIA_BASE, (uint16_t*)arr, 4);
+
+
+        // print the size of byteArr;
+//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) ('0' + sizeof(byteArr)));
+
+
+        //Echo back the bytes
+        floatToByteArray(&receivedValue, byteArr);
+//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[0]);
+//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[1]);
+//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[2]);
+//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[3]);
+
+
+        // print the size of byteArr
+//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) ('0' + sizeof(byteArr)));
+//        byteArrayToIntArray(byteArr, intarr);
+//        SCI_writeCharArray(SCIA_BASE, (uint16_t*)intarr, 16);
+        SCI_writeCharArray(SCIA_BASE, (uint16_t*)byteArr, 4);
     }
 
 

@@ -28,6 +28,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.nio.ByteBuffer;
 
 public class TerminalFragment extends Fragment implements ServiceConnection, SerialListener {
@@ -261,7 +263,14 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         if(hexEnabled) {
             receiveText.append(TextUtil.toHexString(data) + '\n');
         } else {
-            String msg = new String(data);
+            // cast byte array to float and display float value as string
+            float f_mgs;
+            Collections.reverse(Arrays.asList(data));
+            ByteBuffer buf = ByteBuffer.wrap(data);
+            f_mgs= buf.getFloat();
+            String msg = String.valueOf(f_mgs);
+//            String msg = new String(data);
+
             if(newline.equals(TextUtil.newline_crlf) && msg.length() > 0) {
                 // don't show CR as ^M if directly before LF
                 msg = msg.replace(TextUtil.newline_crlf, TextUtil.newline_lf);
