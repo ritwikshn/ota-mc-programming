@@ -139,18 +139,18 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
 
 
-        sendText1 = view.findViewById(R.id.send_text1);
-        hexWatcher = new TextUtil.HexWatcher(sendText1);
-        hexWatcher.enable(hexEnabled);
-        sendText1.addTextChangedListener(hexWatcher);
-        sendText1.setHint(hexEnabled ? "HEX mode" : "");
+//        sendText1 = view.findViewById(R.id.send_text1);
+//        hexWatcher = new TextUtil.HexWatcher(sendText1);
+//        hexWatcher.enable(hexEnabled);
+//        sendText1.addTextChangedListener(hexWatcher);
+//        sendText1.setHint(hexEnabled ? "HEX mode" : "");
 
 
 
         View sendBtn = view.findViewById(R.id.send_btn);
         sendBtn.setOnClickListener(v -> {
             send(sendText.getText().toString());
-            send(sendText1.getText().toString());
+//            send(sendText1.getText().toString());
         });
         return view;
     }

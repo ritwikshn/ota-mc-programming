@@ -84,6 +84,11 @@
 //
 // Globals
 //
+
+typedef union _Float{
+    float f;
+    unsigned long bytes;
+} Float;
 struct string{
     char * arr;
     int sz;
@@ -110,29 +115,61 @@ void append(string * str, char c){
     str->arr[str->ptr] = 0;
 }
 
-float SCI_readFloatBlockingFIFO(){
+// represent each byte in the byte arr in its integer value
+// and append to the intarr
+void byteArrayToIntArray(unsigned char * bytearr, unsigned  char * intarr){
+    int i = 3, j = 15;
+    for(; i>-1; i--){
+        unsigned int x = (unsigned int)bytearr[i];
+        int k = 0;
+        for(; k<3; k++){
+            intarr[j--] = (unsigned int)'0' + x%10;
+            x /= 10;
+        }
+        intarr[j--] = '.';
+    }
+}
+
+void SCI_readFloatBlockingFIFO(unsigned char * intarr, Float * receivedValue){
+    int i = 0;
     unsigned char byte[4];
-    for(int i = 0; i<4; i++){
+    uint16_t rxStatus = 0U;
+    for(; i<4; i++){
         byte[i] = SCI_readCharBlockingFIFO(SCIA_BASE);
         rxStatus = SCI_getRxStatus(SCIA_BASE);
-        if((rxStatus & SCI_RXSTATUSERROR) != 0){
+        if((rxStatus & SCI_RXSTATUS_ERROR) != 0){
             ESTOP0;
         }
     }
-    return *((float *)byte);
+
+    byteArrayToIntArray(byte, intarr);
+    receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 }
 
-void floatToCharArray(char * arr, float x){
-    *((float *)(arr)) = x;
+void floatToDigits(unsigned char * arr, Float * receivedValue){
+    float x = receivedValue->f;
+    if(x < 0) x*=-1;
+    if(x==0) x = 123;
+    while(x<100){
+        x*=10;
+    }
+   unsigned int xi = x;
+   int i = 4;
+   while(i--){
+       arr[i] = '0' + xi%10;
+//       arr[i] = '1' + 1;
+       xi/=10;
+   }
 }
 //
 // Main
 //
+//float receivedValue = 1.24;''
 void main(void)
 {
-
-    unsigned char *msg = "You Sent : ";
-    uint16_t rxStatus = 0U;
+//
+//    unsigned char *msg = "You Sent : ";
+//
 
     //
     // Configure PLL, disable WD, enable peripheral clocks.
@@ -195,12 +232,13 @@ void main(void)
     SCI_lockAutobaud(SCIA_BASE);
 #endif
 
-    float receivedValue;
-    char arr[4];
+    Float receivedValue;
+    unsigned char arr[4];
+    unsigned char intarr[16];
     while(1){
-        receivedValue = SCI_readFloatBlockingFIFO();
-//        SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, strlen(msg));
-        arr = floatTocharArray(arr, receivedValue);
+        SCI_readFloatBlockingFIFO(intarr, &receivedValue);
+        floatToDigits(arr, &receivedValue);
+//        SCI_writeCharArray(SCIA_BASE, (uint16_t*)intarr, 16);
         SCI_writeCharArray(SCIA_BASE, (uint16_t*)arr, 4);
     }
 
@@ -215,7 +253,7 @@ void main(void)
 //        SCI_writeCharBlockingFIFO(SCIA_BASE, receivedChar);
 
 
-    }
+
 }
 
 //
