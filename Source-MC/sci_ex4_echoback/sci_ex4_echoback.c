@@ -183,6 +183,12 @@ void floatToByteArray(Float * fvalue, unsigned char * byteArr){
 }
 
 
+void calculation(Float * fValue){
+    fValue->f = fValue->f*400.05+100.128;
+}
+
+
+
 //
 // Main
 //
@@ -260,21 +266,12 @@ void main(void)
 //        floatToDigits(arr, &receivedValue);
 //        SCI_writeCharArray(SCIA_BASE, (uint16_t*)intarr, 16);
 
-
-        // print the size of byteArr;
-//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) ('0' + sizeof(byteArr)));
-
-
+        // do some calculations
+        calculation(&receivedValue);
         //Echo back the bytes
         floatToByteArray(&receivedValue, byteArr);
-//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[0]);
-//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[1]);
-//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[2]);
-//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) byteArr[3]);
 
-
-        // print the size of byteArr
-//        SCI_writeCharBlockingNonFIFO(SCIA_BASE, (uint16_t) ('0' + sizeof(byteArr)));
+        //convert to digits for preliminary verification -
 //        byteArrayToIntArray(byteArr, intarr);
 //        SCI_writeCharArray(SCIA_BASE, (uint16_t*)intarr, 16);
         SCI_writeCharArray(SCIA_BASE, (uint16_t*)byteArr, 4);
