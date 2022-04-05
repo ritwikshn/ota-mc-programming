@@ -1,4 +1,4 @@
-package de.kai_morich.simple_bluetooth_terminal;
+package EE.IDP.bluetooth_comm;
 
 import android.text.Editable;
 import android.text.InputType;
@@ -12,7 +12,7 @@ import androidx.annotation.ColorInt;
 
 import java.io.ByteArrayOutputStream;
 
-final class TextUtil {
+final class text_style {
 
     @ColorInt static int caretBackground = 0xff666666;
 
@@ -69,9 +69,10 @@ final class TextUtil {
         }
     }
 
-    /**
-     * use https://en.wikipedia.org/wiki/Caret_notation to avoid invisible control characters
-     */
+//    TextView text1 = view.findViewById(R.id.text1);
+//    TextView text2 = view.findViewById(R.id.text2);
+//                text1.setText(device.getName());
+//    text2.setTe
     static CharSequence toCaretString(CharSequence s, boolean keepNewline) {
         return toCaretString(s, keepNewline, s.length());
     }
@@ -97,6 +98,15 @@ final class TextUtil {
             }
         return sb;
     }
+
+//}
+//
+//    static void toHexString(StringBuilder sb, final byte[] buf) {
+//        toHexString(sb, buf, 0, buf.length);
+//    }
+//
+//    static void toHexStrin
+
 
 
     static class HexWatcher implements TextWatcher {
@@ -203,11 +213,9 @@ final class TextUtil {
         }
     }
 
-    /**
-     * use https://en.wikipedia.org/wiki/Caret_notation to avoid invisible control characters
-     */
 
-/**
+
+
     static CharSequence toCaretString(CharSequence s, boolean keepNewline) {
         return toCaretString(s, keepNewline, s.length());
     }
@@ -238,41 +246,7 @@ final class TextUtil {
     static class HexWatcher implements TextWatcher {
 
         private final TextView view;
-        private final StringBuilder sb = new StringBuilder();
-        private boolean self = false;
-        private boolean enabled = false;
-
-        HexWatcher(TextView view) {
-            this.view = view;
-        }
-
-        void enable(boolean enable) {
-            if(enable) {
-                view.setInputType(InputType.TYPE_CLASS_TEXT + InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-            } else {
-                view.setInputType(InputType.TYPE_CLASS_TEXT + InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-            }
-            enabled = enable;
-        }
-
-        @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-        }
-
-        @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
-        }
-
-        @Override
-        public void afterTextChanged(Editable s) {
-            if(!enabled || self)
-                return;
-
-            sb.delete(0,sb.length());
-            int i;
-            for(i=0; i<s.length(); i++) {
-                char c = s.charAt(i);
-                if(c >= '0' && c <= '9') sb.append(c);
+        private final;
                 if(c >= 'A' && c <= 'F') sb.append(c);
                 if(c >= 'a' && c <= 'f') sb.append((char)(c+'A'-'a'));
             }

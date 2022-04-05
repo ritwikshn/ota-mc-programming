@@ -1,4 +1,4 @@
-package de.kai_morich.simple_bluetooth_terminal;
+package EE.IDP.bluetooth_comm;
 
 import android.os.Bundle;
 import androidx.fragment.app.FragmentManager;
@@ -15,7 +15,7 @@ public class MainActivity extends AppCompatActivity implements FragmentManager.O
         setSupportActionBar(toolbar);
         getSupportFragmentManager().addOnBackStackChangedListener(this);
         if (savedInstanceState == null)
-            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new DevicesFragment(), "devices").commit();
+            getSupportFragmentManager().beginTransaction().add(R.id.fragment, new listdev(), "devices").commit();
         else
             onBackStackChanged();
     }

@@ -1,4 +1,4 @@
-package de.kai_morich.simple_bluetooth_terminal;
+package EE.IDP.bluetooth_comm;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -20,14 +20,11 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Queue;
 
-/**
- * create notification and queue serial data while activity is not in the foreground
- * use listener chain: SerialSocket -> SerialService -> UI fragment
- */
-public class SerialService extends Service implements SerialListener {
+
+public class serial_Serv extends Service implements serial_file {
 
     class SerialBinder extends Binder {
-        SerialService getService() { return SerialService.this; }
+        serial_Serv getService() { return serial_Serv.this; }
     }
 
     private enum QueueType {Connect, ConnectError, Read, IoError}
@@ -44,14 +41,11 @@ public class SerialService extends Service implements SerialListener {
     private final IBinder binder;
     private final Queue<QueueItem> queue1, queue2;
 
-    private SerialSocket socket;
-    private SerialListener listener;
+    private serial_open socket;
+    private serial_file listener;
     private boolean connected;
 
-    /**
-     * Lifecylce
-     */
-    public SerialService() {
+    public serial_Serv() {
         mainLooper = new Handler(Looper.getMainLooper());
         binder = new SerialBinder();
         queue1 = new LinkedList<>();
@@ -71,17 +65,14 @@ public class SerialService extends Service implements SerialListener {
         return binder;
     }
 
-    /**
-     * Api
-     */
-    public void connect(SerialSocket socket) throws IOException {
+    public void connect(serial_open socket) throws IOException {
         socket.connect(this);
         this.socket = socket;
         connected = true;
     }
 
     public void disconnect() {
-        connected = false; // ignore data,errors while disconnecting
+        connected = false;
         cancelNotification();
         if(socket != null) {
             socket.disconnect();
@@ -95,12 +86,11 @@ public class SerialService extends Service implements SerialListener {
         socket.write(data);
     }
 
-    public void attach(SerialListener listener) {
+    public void attach(serial_file listener) {
         if(Looper.getMainLooper().getThread() != Thread.currentThread())
             throw new IllegalArgumentException("not in main thread");
         cancelNotification();
-        // use synchronized() to prevent new items in queue2
-        // new items will not be added to queue1 because mainLooper.post and attach() run in main thread
+
         synchronized (this) {
             this.listener = listener;
         }
@@ -127,28 +117,26 @@ public class SerialService extends Service implements SerialListener {
     public void detach() {
         if(connected)
             createNotification();
-        // items already in event queue (posted before detach() to mainLooper) will end up in queue1
-        // items occurring later, will be moved directly to queue2
-        // detach() and mainLooper.post run in the main thread, so all items are caught
+
         listener = null;
     }
 
     private void createNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel nc = new NotificationChannel(Constants.NOTIFICATION_CHANNEL, "Background service", NotificationManager.IMPORTANCE_LOW);
+            NotificationChannel nc = new NotificationChannel(consts.NOTIFICATION_CHANNEL, "Background service", NotificationManager.IMPORTANCE_LOW);
             nc.setShowBadge(false);
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             nm.createNotificationChannel(nc);
         }
         Intent disconnectIntent = new Intent()
-                .setAction(Constants.INTENT_ACTION_DISCONNECT);
+                .setAction(consts.INTENT_ACTION_DISCONNECT);
         Intent restartIntent = new Intent()
-                .setClassName(this, Constants.INTENT_CLASS_MAIN_ACTIVITY)
+                .setClassName(this, consts.INTENT_CLASS_MAIN_ACTIVITY)
                 .setAction(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LAUNCHER);
         PendingIntent disconnectPendingIntent = PendingIntent.getBroadcast(this, 1, disconnectIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent restartPendingIntent = PendingIntent.getActivity(this, 1, restartIntent,  PendingIntent.FLAG_UPDATE_CURRENT);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, Constants.NOTIFICATION_CHANNEL)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, consts.NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setColor(getResources().getColor(R.color.colorPrimary))
                 .setContentTitle(getResources().getString(R.string.app_name))
@@ -156,19 +144,16 @@ public class SerialService extends Service implements SerialListener {
                 .setContentIntent(restartPendingIntent)
                 .setOngoing(true)
                 .addAction(new NotificationCompat.Action(R.drawable.ic_clear_white_24dp, "Disconnect", disconnectPendingIntent));
-        // @drawable/ic_notification created with Android Studio -> New -> Image Asset using @color/colorPrimaryDark as background color
-        // Android < API 21 does not support vectorDrawables in notifications, so both drawables used here, are created as .png instead of .xml
+
         Notification notification = builder.build();
-        startForeground(Constants.NOTIFY_MANAGER_START_FOREGROUND_SERVICE, notification);
+        startForeground(consts.NOTIFY_MANAGER_START_FOREGROUND_SERVICE, notification);
     }
 
     private void cancelNotification() {
         stopForeground(true);
     }
 
-    /**
-     * SerialListener
-     */
+
     public void onSerialConnect() {
         if(connected) {
             synchronized (this) {
@@ -186,6 +171,9 @@ public class SerialService extends Service implements SerialListener {
             }
         }
     }
+
+
+
 
     public void onSerialConnectError(Exception e) {
         if(connected) {
@@ -227,6 +215,15 @@ public class SerialService extends Service implements SerialListener {
         }
     }
 
+//    private void cancelNotification() {
+//        stopForeground(true);
+//    }
+//
+//
+//    public void onSerialConnect() {
+//        if(connected) {
+//            synchronized (this) {
+
     public void onSerialIoError(Exception e) {
         if(connected) {
             synchronized (this) {
@@ -246,6 +243,11 @@ public class SerialService extends Service implements SerialListener {
                     disconnect();
                 }
             }
+//            queue2.add(new QueueItem(QueueType.IoError, null, e));
+//            cancelNotification();
+//            disconnect();
+
+
         }
     }
 
