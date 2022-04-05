@@ -121,6 +121,24 @@ void append(string * str, char c){
 }
 
 
+// represent first 4 significant digits of the given float value
+// use for preliminary verification purposes.
+void floatToDigits(unsigned char * arr, Float * receivedValue){
+    float x = receivedValue->f;
+    if(x < 0) x*=-1;
+    if(x==0) x = 123;
+    while(x<100){
+        x*=10;
+    }
+   unsigned int xi = x;
+   int i = 4;
+   while(i--){
+       arr[i] = '0' + xi%10;
+       xi/=10;
+   }
+}
+
+
 // represent each byte in the byte arr in its ascii value ( 0 -255 )
 // and append this value to the intarr
 void byteArrayToIntArray(unsigned char * bytearr, unsigned  char * intarr){
@@ -137,8 +155,9 @@ void byteArrayToIntArray(unsigned char * bytearr, unsigned  char * intarr){
 }
 
 // read floats through SCI
-// reads 4 bytes at a time and cast and stores to the receivedValue Float variable.
-void SCI_readFloatBlockingFIFO(unsigned char * intarr, Float * receivedValue){
+// reads 4 bytes at a time and cast and stores to the fvalue Float variable.
+// for testing purposes
+void SCI_readFloatBlockingFIFOTest(unsigned char * intarr, Float * fvalue){
     int i = 0;
     unsigned char byte[4];
     uint16_t rxStatus = 0U;
@@ -151,30 +170,28 @@ void SCI_readFloatBlockingFIFO(unsigned char * intarr, Float * receivedValue){
     }
 
     byteArrayToIntArray(byte, intarr);
-    receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
+    fvalue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 }
 
-// represent first 4 significant digits of the given float value
-// use for preliminary verification purposes.
-void floatToDigits(unsigned char * arr, Float * receivedValue){
-    float x = receivedValue->f;
-    if(x < 0) x*=-1;
-    if(x==0) x = 123;
-    while(x<100){
-        x*=10;
+// read floats through SCI
+// reads 4 bytes at a time and cast and stores to the fvalue Float variable.
+void SCI_readFloatBlockingFIFO(Float * fvalue){
+    int i = 0;
+    unsigned char byte[4];
+    uint16_t rxStatus = 0U;
+    for(; i<4; i++){
+        byte[i] = SCI_readCharBlockingFIFO(SCIA_BASE);
+        rxStatus = SCI_getRxStatus(SCIA_BASE);
+        if((rxStatus & SCI_RXSTATUS_ERROR) != 0){
+            ESTOP0;
+        }
     }
-   unsigned int xi = x;
-   int i = 4;
-   while(i--){
-       arr[i] = '0' + xi%10;
-//       arr[i] = '1' + 1;
-       xi/=10;
-   }
+
+    fvalue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 }
 
 // copy the 4 bytes stored in fvalue into byteArr
 void floatToByteArray(Float * fvalue, unsigned char * byteArr){
-//    memcpy(byteArr, &(fvalue->f), sizeof(byteArr));
     unsigned long copy = fvalue->bytes, mask = 0xFF;
     int i = 3;
     for(; i>-1; i--){
@@ -182,18 +199,39 @@ void floatToByteArray(Float * fvalue, unsigned char * byteArr){
     }
 }
 
-
-void calculation(Float * fValue){
-    fValue->f = fValue->f*400.05+100.128;
+//write float through SCI
+// first convert float to bytearray and then transmit the 4 bytes through channel
+void SCI_writeFloatBlockingFIFO(Float * fvalue){
+    unsigned char byteArr[4];
+    floatToByteArray(fvalue, byteArr);        //convert Float to byte array
+    SCI_writeCharArray(Arr);        //convert Float to byte array
+    SCI_writeCharArray(SCIA_BASE, (uint16_t*)byteArr, 4)        //send the byte array over the channel
 }
 
 
 
+//do some arbitrary calculation
+void calculation(Float * fValue){
+    fValue->f = fValue->f*400.05+100.128;
+}
+
+//set initial values to the variables
+void init_variables(Float * i1, Float *i2, Float * v1, Float * v2){
+    i1 -> f = 1.0;
+    i2 -> f = 2.0;
+    v1 -> f = 1.5;
+    v2 -> f = 2.5;
+}
+
+enum state(home, read, write);
 //
 // Main
 //
 void main(void)
 {
+
+
+
     //
     // Configure PLL, disable WD, enable peripheral clocks.
     //
@@ -255,37 +293,64 @@ void main(void)
     SCI_lockAutobaud(SCIA_BASE);
 #endif
 
-    Float receivedValue;
-    unsigned char byteArr[4];
-    unsigned char intarr[16];
+
+    enum state STATE = home;
+
+    Float i1, i2, v1, v2;
+
+    //set initial values -
+    //i1 = 1.0
+    //i2 = 2.0
+    //v1 = 1.5
+    //v2 = 2.5
+    init_variables(&i1, &i2, &v1, &v2);
     while(1){
-        // read float through SCI
-        SCI_readFloatBlockingFIFO(intarr, &receivedValue);
 
-        // convert to digits for preliminary verification -
-//        floatToDigits(arr, &receivedValue);
-//        SCI_writeCharArray(SCIA_BASE, (uint16_t*)intarr, 16);
 
-        // do some calculations
-        calculation(&receivedValue);
-        //Echo back the bytes
-        floatToByteArray(&receivedValue, byteArr);
+        switch(STATE){
+            case home:{
+                // read signal(char) for go to read state / write state
+                unsigned char next_state = SCI_readCharBlockingFIFO(SCI_BASE);
 
-        //convert to digits for preliminary verification -
-//        byteArrayToIntArray(byteArr, intarr);
-//        SCI_writeCharArray(SCIA_BASE, (uint16_t*)intarr, 16);
-        SCI_writeCharArray(SCIA_BASE, (uint16_t*)byteArr, 4);
+                // change state
+                if(next_state == 'r') STATE = read;
+                else if(next_state == 'w') STATE = write;
+                else STATE = home;
+             break;
+            }
+            case read:{
+                // read signal (char) for back/refresh
+                unsigned char action = SCI_readCharBlockingFIFO(SCI_BASE);
+                // if refresh - transmit variables
+                // else if back - change state to  home
+                if(action == 'n'){
+                    SCI_writeFloatBlockingFIFO(&i1);  //as if index 0
+                    SCI_writeFloatBlockingFIFO(&v1);  //as if index 1
+                    SCI_writeFloatBlockingFIFO(&i2);  //as if index 2
+                    SCI_writeFloatBlockingFIFO(&v2);  //as if index 3
+                }else if(action == 'b'){
+                    STATE = home;
+                }else STATE = home;
+                break;
+            }case write:{
+                // read signal(char) for back/writ
+                unsigned char action = SCI_readCharBlockingFIFO(SCI_BASE);
+                // if write - accept 4 float values and write assign to variables
+                // else if back - change state to home
+                if(action == 'w'){
+                    SCI_readFloatBlockingFIFO(&i1);  //as if index 0
+                    SCI_readFloatBlockingFIFO(&v1);  //as if index 1
+                    SCI_readFloatBlockingFIFO(&i2);  //as if index 2
+                    SCI_readFloatBlockingFIFO(&v2);  //as if index 3
+                }else if(action == 'b'){
+                    STATE = home;
+                }else STATE = home;
+                break;
+            }
+            default:
+                break;
+        }
     }
-
-
-
-
-
-        //
-        // Echo back the characters.
-
-
-//        SCI_writeCharBlockingFIFO(SCIA_BASE, receivedChar);
 
 
 
