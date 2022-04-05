@@ -29,6 +29,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.nio.ByteBuffer;
 
 public class serial_terminal extends Fragment implements ServiceConnection, serial_file {
@@ -295,6 +297,7 @@ public class serial_terminal extends Fragment implements ServiceConnection, seri
         if(hexEnabled) {
             receiveText.append(text_style.toHexString(data) + '\n');
         } else {
+<<<<<<< HEAD:Source-Android/app/src/main/java/EE/IDP/bluetooth_comm/serial_terminal.java
 
             float f_mgs;
             ByteBuffer buf = ByteBuffer.wrap(data);
@@ -309,6 +312,20 @@ public class serial_terminal extends Fragment implements ServiceConnection, seri
 
 
 
+=======
+            // cast byte array to float and display float value as string
+            float f_mgs;
+            Collections.reverse(Arrays.asList(data));
+            ByteBuffer buf = ByteBuffer.wrap(data);
+            f_mgs= buf.getFloat();
+            String msg = String.valueOf(f_mgs);
+//            String msg = new String(data);
+
+            if(newline.equals(TextUtil.newline_crlf) && msg.length() > 0) {
+                // don't show CR as ^M if directly before LF
+                msg = msg.replace(TextUtil.newline_crlf, TextUtil.newline_lf);
+                // special handling if CR and LF come in separate fragments
+>>>>>>> 4ea552ceb07f50be56a316e7a633d72148c87bf4:Source-Android/app/src/main/java/de/kai_morich/simple_bluetooth_terminal/TerminalFragment.java
                 if (pendingNewline && msg.charAt(0) == '\n') {
                     Editable edt = receiveText.getEditableText();
 
