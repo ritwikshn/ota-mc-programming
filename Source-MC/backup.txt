@@ -1,0 +1,50 @@
+/// remove
+// string datatype adapted from cpp library
+// supports append operation
+//typedef struct _string{
+//    char * arr;
+//    int sz;
+//    int ptr;
+//} string;
+
+///remove
+// create a new string
+//string * new_string(){
+//    string * ret = malloc(1*sizeof(string));
+//    ret->sz = 1;
+//    ret->ptr = 0;
+//    ret->arr = (char *) malloc(2*sizeof(char));
+//    return ret;
+//}
+
+
+///remove
+// append character to a string
+//void append(string * str, char c){
+//    if(str->ptr == str-> sz){
+//        str->sz *= 2;
+//        str->arr = (char *) realloc(str->arr, str->sz + 1);
+//    }
+//    str->arr[str->ptr++] = c;
+//    str->arr[str->ptr] = 0;
+//}
+
+
+
+
+//remove
+//test puroposes
+// represent each byte in the byte arr in its ascii value ( 0 -255 )
+// and append this value to the intarr
+//void byteArrayToIntArray(unsigned char * bytearr, unsigned  char * intarr){
+//    int i = 3, j = 15;
+//    for(; i>-1; i--){
+//        unsigned int x = (bytearr[i] & 0xFF);
+//        int k = 0;
+//        for(; k<3; k++){
+//            intarr[j--] = (unsigned int)'0' + x%10;
+//            x /= 10;
+//        }
+//        intarr[j--] = '.';
+//    }
+//}
