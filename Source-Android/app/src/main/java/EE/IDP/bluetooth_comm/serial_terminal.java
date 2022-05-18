@@ -1,4 +1,4 @@
-package de.kai_morich.simple_bluetooth_terminal;
+package EE.IDP.bluetooth_comm;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -24,36 +24,33 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.nio.ByteBuffer;
 
-public class TerminalFragment extends Fragment implements ServiceConnection, SerialListener {
+public class serial_terminal extends Fragment implements ServiceConnection, serial_file {
 
     private enum Connected { False, Pending, True }
 
     private String deviceAddress;
-    private SerialService service;
+    private serial_Serv service;
 
     private TextView receiveText;
     private TextView sendText;
     private TextView sendText1;
-    private TextUtil.HexWatcher hexWatcher;
+    private text_style.HexWatcher hexWatcher;
 
     private Connected connected = Connected.False;
     private boolean initialStart = true;
     private boolean hexEnabled = false;
     private boolean pendingNewline = false;
-    private String newline = TextUtil.newline_crlf;
+    private String newline = text_style.newline_crlf;
     private String null_char = "\0";
 
-    /*
-     * Lifecycle
-     */
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,7 +63,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     public void onDestroy() {
         if (connected != Connected.False)
             disconnect();
-        getActivity().stopService(new Intent(getActivity(), SerialService.class));
+        getActivity().stopService(new Intent(getActivity(), serial_Serv.class));
         super.onDestroy();
     }
 
@@ -76,7 +73,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         if(service != null)
             service.attach(this);
         else
-            getActivity().startService(new Intent(getActivity(), SerialService.class)); // prevents service destroy on unbind from recreated activity caused by orientation change
+            getActivity().startService(new Intent(getActivity(), serial_Serv.class)); // prevents service destroy on unbind from recreated activity caused by orientation change
     }
 
     @Override
@@ -90,7 +87,7 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     @Override
     public void onAttach(@NonNull Activity activity) {
         super.onAttach(activity);
-        getActivity().bindService(new Intent(getActivity(), SerialService.class), this, Context.BIND_AUTO_CREATE);
+        getActivity().bindService(new Intent(getActivity(), serial_Serv.class), this, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -110,11 +107,13 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
-        service = ((SerialService.SerialBinder) binder).getService();
+        service = ((serial_Serv.SerialBinder) binder).getService();
         service.attach(this);
         if(initialStart && isResumed()) {
             initialStart = false;
             getActivity().runOnUiThread(this::connect);
+
+
         }
     }
 
@@ -126,19 +125,42 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
     /*
      * UI
      */
+  /*  @Override
+    private View screen(@NonNull LayoutInflater inflater, ViewGroup container){
+      
+
+
+        });
+
+        return view1;
+    }*/
+
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_terminal, container, false);
-        receiveText = view.findViewById(R.id.receive_text);                          // TextView performance decreases with number of spans
-        receiveText.setTextColor(getResources().getColor(R.color.colorRecieveText)); // set as default color to reduce number of spans
-        receiveText.setMovementMethod(ScrollingMovementMethod.getInstance());
 
-        sendText = view.findViewById(R.id.send_text);
-        hexWatcher = new TextUtil.HexWatcher(sendText);
-        hexWatcher.enable(hexEnabled);
-        sendText.addTextChangedListener(hexWatcher);
-        sendText.setHint(hexEnabled ? "HEX mode" : "");
+//                View click;
+//
+//        if(connected == Connected.True) {
+//                View view1 = inflater.inflate(R.layout.test, container, false);
+//                View write_click = view1.findViewById(R.id.button2);
+//                click = write_click;
+//        }
+//
+//
+//                    click.setOnClickListener(c -> {
 
+
+                    View view = inflater.inflate(R.layout.serial_terminal, container, false);
+                    receiveText = view.findViewById(R.id.receive_text);                          // TextView performance decreases with number of spans
+                    receiveText.setTextColor(getResources().getColor(R.color.colorRecieveText)); // set as default color to reduce number of spans
+                    receiveText.setMovementMethod(ScrollingMovementMethod.getInstance());
+
+                    sendText = view.findViewById(R.id.send_text);
+                    hexWatcher = new text_style.HexWatcher(sendText);
+                    hexWatcher.enable(hexEnabled);
+                    sendText.addTextChangedListener(hexWatcher);
+                    sendText.setHint(hexEnabled ? "HEX mode" : "");
 
 
 //        sendText1 = view.findViewById(R.id.send_text1);
@@ -148,20 +170,24 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
 //        sendText1.setHint(hexEnabled ? "HEX mode" : "");
 
 
-
-        View sendBtn = view.findViewById(R.id.send_btn);
-        sendBtn.setOnClickListener(v -> {
-            send(sendText.getText().toString());
+                    View sendBtn = view.findViewById(R.id.send_btn);
+                    sendBtn.setOnClickListener(v -> {
+                        send(sendText.getText().toString());
 //            send(sendText1.getText().toString());
-        });
-        return view;
-    }
+                    });
+                    return view;
+//                });
+//
+//                return view1;
+
+
+   }
 
 
 
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_terminal, menu);
+        inflater.inflate(R.menu.menu, menu);
         menu.findItem(R.id.hex).setChecked(hexEnabled);
     }
 
@@ -204,8 +230,9 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
             status("connecting...");
             connected = Connected.Pending;
-            SerialSocket socket = new SerialSocket(getActivity().getApplicationContext(), device);
+            serial_open socket = new serial_open(getActivity().getApplicationContext(), device);
             service.connect(socket);
+
         } catch (Exception e) {
             onSerialConnectError(e);
         }
@@ -229,14 +256,16 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             return;
         }
         try {
+
+
             String msg;
             byte[] data;
             if(hexEnabled) {
                 StringBuilder sb = new StringBuilder();
-                TextUtil.toHexString(sb, TextUtil.fromHexString(str));
-                TextUtil.toHexString(sb, newline.getBytes());
+                text_style.toHexString(sb, text_style.fromHexString(str));
+                text_style.toHexString(sb, newline.getBytes());
                 msg = sb.toString();
-                data = TextUtil.fromHexString(msg);
+                data = text_style.fromHexString(msg);
             } else {
                 float f_msg;
                 msg = str;
@@ -254,35 +283,42 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
             spn.setSpan(new ForegroundColorSpan(getResources().getColor(R.color.colorSendText)), 0, spn.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             receiveText.append(spn);
             service.write(data);
-        } catch (Exception e) {
+        }
+
+
+        catch (Exception e) {
             onSerialIoError(e);
         }
     }
 
     private void receive(byte[] data) {
         if(hexEnabled) {
-            receiveText.append(TextUtil.toHexString(data) + '\n');
+            receiveText.append(text_style.toHexString(data) + '\n');
         } else {
-            // cast byte array to float and display float value as string
+
             float f_mgs;
-            Collections.reverse(Arrays.asList(data));
             ByteBuffer buf = ByteBuffer.wrap(data);
             f_mgs= buf.getFloat();
             String msg = String.valueOf(f_mgs);
-//            String msg = new String(data);
 
-            if(newline.equals(TextUtil.newline_crlf) && msg.length() > 0) {
-                // don't show CR as ^M if directly before LF
-                msg = msg.replace(TextUtil.newline_crlf, TextUtil.newline_lf);
-                // special handling if CR and LF come in separate fragments
+
+
+            if(newline.equals(text_style.newline_crlf) && msg.length() > 0) {
+                msg = msg.replace(text_style.newline_crlf, text_style.newline_lf);
+
+
+
+
                 if (pendingNewline && msg.charAt(0) == '\n') {
                     Editable edt = receiveText.getEditableText();
+
                     if (edt != null && edt.length() > 1)
                         edt.replace(edt.length() - 2, edt.length(), "");
                 }
+
                 pendingNewline = msg.charAt(msg.length() - 1) == '\r';
             }
-            receiveText.append(TextUtil.toCaretString(msg, newline.length() != 0));
+            receiveText.append(text_style.toCaretString(msg, newline.length() != 0));
         }
     }
 
@@ -292,13 +328,12 @@ public class TerminalFragment extends Fragment implements ServiceConnection, Ser
         receiveText.append(spn);
     }
 
-    /*
-     * SerialListener
-     */
+
     @Override
     public void onSerialConnect() {
         status("connected");
         connected = Connected.True;
+
     }
 
     @Override

@@ -1,7 +1,9 @@
-package de.kai_morich.simple_bluetooth_terminal;
+package EE.IDP.bluetooth_comm;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -18,10 +20,11 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class DevicesFragment extends ListFragment {
+public class listdev extends ListFragment {
 
     private BluetoothAdapter bluetoothAdapter;
     private final ArrayList<BluetoothDevice> listItems = new ArrayList<>();
@@ -39,7 +42,7 @@ public class DevicesFragment extends ListFragment {
             public View getView(int position, View view, @NonNull ViewGroup parent) {
                 BluetoothDevice device = listItems.get(position);
                 if (view == null)
-                    view = getActivity().getLayoutInflater().inflate(R.layout.device_list_item, parent, false);
+                    view = getActivity().getLayoutInflater().inflate(R.layout.device_list, parent, false);
                 TextView text1 = view.findViewById(R.id.text1);
                 TextView text2 = view.findViewById(R.id.text2);
                 text1.setText(device.getName());
@@ -53,7 +56,7 @@ public class DevicesFragment extends ListFragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         setListAdapter(null);
-        View header = getActivity().getLayoutInflater().inflate(R.layout.device_list_header, null, false);
+        View header = getActivity().getLayoutInflater().inflate(R.layout.listdev, null, false);
         getListView().addHeaderView(header, null, false);
         setEmptyText("initializing...");
         ((TextView) getListView().getEmptyView()).setTextSize(18);
@@ -62,7 +65,7 @@ public class DevicesFragment extends ListFragment {
 
     @Override
     public void onCreateOptionsMenu(@NonNull Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_devices, menu);
+        inflater.inflate(R.menu.devices, menu);
         if(bluetoothAdapter == null)
             menu.findItem(R.id.bt_settings).setEnabled(false);
     }
@@ -78,6 +81,11 @@ public class DevicesFragment extends ListFragment {
             setEmptyText("<no bluetooth devices found>");
         refresh();
     }
+//    serial_open(Context context, BluetoothDevice device) {
+//        if(context instanceof Activity)
+//            throw new InvalidParameterException("expected non UI context");
+//        this.context = context;
+//        this.device = device;
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -99,23 +107,26 @@ public class DevicesFragment extends ListFragment {
                 if (device.getType() != BluetoothDevice.DEVICE_TYPE_LE)
                     listItems.add(device);
         }
-        Collections.sort(listItems, DevicesFragment::compareTo);
+        Collections.sort(listItems, listdev::compareTo);
         listAdapter.notifyDataSetChanged();
     }
+//    (listener != null)
+//            listener.onSerialConnectError(e);
+//            try {
+//        socket.close();
+//    } catch (Exception ignored) {
+//    }
 
     @Override
     public void onListItemClick(@NonNull ListView l, @NonNull View v, int position, long id) {
         BluetoothDevice device = listItems.get(position-1);
         Bundle args = new Bundle();
         args.putString("device", device.getAddress());
-        Fragment fragment = new TerminalFragment();
+        Fragment fragment = new serial_terminal();
         fragment.setArguments(args);
         getFragmentManager().beginTransaction().replace(R.id.fragment, fragment, "terminal").addToBackStack(null).commit();
     }
 
-    /**
-     * sort by name, then address. sort named devices first
-     */
     static int compareTo(BluetoothDevice a, BluetoothDevice b) {
         boolean aValid = a.getName()!=null && !a.getName().isEmpty();
         boolean bValid = b.getName()!=null && !b.getName().isEmpty();

@@ -1,4 +1,4 @@
-package de.kai_morich.simple_bluetooth_terminal;
+package EE.IDP.bluetooth_comm;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothDevice;
@@ -14,19 +14,19 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 
-class SerialSocket implements Runnable {
+class serial_open implements Runnable {
 
     private static final UUID BLUETOOTH_SPP = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     private final BroadcastReceiver disconnectBroadcastReceiver;
 
     private final Context context;
-    private SerialListener listener;
+    private serial_file listener;
     private final BluetoothDevice device;
     private BluetoothSocket socket;
     private boolean connected;
 
-    SerialSocket(Context context, BluetoothDevice device) {
+    serial_open(Context context, BluetoothDevice device) {
         if(context instanceof Activity)
             throw new InvalidParameterException("expected non UI context");
         this.context = context;
@@ -45,18 +45,15 @@ class SerialSocket implements Runnable {
         return device.getName() != null ? device.getName() : device.getAddress();
     }
 
-    /**
-     * connect-success and most connect-errors are returned asynchronously to listener
-     */
-    void connect(SerialListener listener) throws IOException {
+
+    void connect(serial_file listener) throws IOException {
         this.listener = listener;
-        context.registerReceiver(disconnectBroadcastReceiver, new IntentFilter(Constants.INTENT_ACTION_DISCONNECT));
+        context.registerReceiver(disconnectBroadcastReceiver, new IntentFilter(consts.INTENT_ACTION_DISCONNECT));
         Executors.newSingleThreadExecutor().submit(this);
     }
 
     void disconnect() {
-        listener = null; // ignore remaining data and errors
-        // connected = false; // run loop will reset connected
+        listener = null;
         if(socket != null) {
             try {
                 socket.close();
@@ -76,6 +73,12 @@ class SerialSocket implements Runnable {
         socket.getOutputStream().write(data);
     }
 
+//    getListView().addHeaderView(header, null, false);
+//    setEmptyText("initializing...");
+//      inflater.inflate(R.menu.devices, menu);
+//        if(bluetoothAdapter == null)
+//            menu.findItem(R.id.bt_settings).setEnabled(false);
+//}
     @Override
     public void run() { // connect & read
         try {
