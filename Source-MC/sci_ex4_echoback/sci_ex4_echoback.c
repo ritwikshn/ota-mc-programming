@@ -75,6 +75,8 @@
 #include "driverlib.h"
 #include "device.h"
 #include<stdlib.h>
+#include<stdio.h>
+
 //
 // Defines
 //
@@ -84,47 +86,62 @@
 //
 // Globals
 //
-struct string{
-    char * arr;
-    int sz;
-    int ptr;
-};
 
-typedef struct string string;
+// union Float to handle casting of byte arrays to float
+typedef union _Float{
+    float f;
+    unsigned long bytes;
+} Float;
 
 
-string * new_string(){
-    string * ret = malloc(1*sizeof(string));
-    ret->sz = 1;
-    ret->ptr = 0;
-    ret->arr = (char *) malloc(2*sizeof(char));
-    return ret;
-}
 
-void append(string * str, char c){
-    if(str->ptr == str-> sz){
-        str->sz *= 2;
-        str->arr = (char *) realloc(str->arr, str->sz + 1);
+
+// read floats through SCI
+// reads 4 bytes at a time and cast and stores to the receivedValue Float variable.
+void SCI_readFloatBlockingFIFO(Float * receivedValue){
+    int i = 0;
+
+    //
+    unsigned char byte[4];
+    uint16_t rxStatus = 0U;
+    for(; i<4; i++){
+        byte[i] = SCI_readCharBlockingFIFO(SCIA_BASE);
+        rxStatus = SCI_getRxStatus(SCIA_BASE);
+        if((rxStatus & SCI_RXSTATUS_ERROR) != 0){
+            ESTOP0;
+        }
     }
-    str->arr[str->ptr++] = c;
-    str->arr[str->ptr] = 0;
+
+    receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 }
 
-//void print(string * str){
-//    printf("%s\n", str->arr);
-//}
 
-uint16_t loopCounter = 0;
-uint16_t receivedChar;
+
+
+
+// copy the 4 bytes stored in fvalue into byteArr
+void floatToByteArray(Float * fvalue, unsigned char * byteArr){
+
+
+    unsigned long copy = fvalue->bytes, mask = 0xFF;
+    int i = 3;
+    for(; i>-1; i--){
+        byteArr[i] = (copy >> 8*(3-i) & mask);
+    }
+}
+
+
+void calculation(Float * fValue){
+    fValue->f = fValue->f*400.05+100.128;
+}
+
+
+
 //
 // Main
 //
 void main(void)
 {
-
-    unsigned char *msg = "You Sent : ";
-    uint16_t rxStatus = 0U;
-
     //
     // Configure PLL, disable WD, enable peripheral clocks.
     //
@@ -186,35 +203,29 @@ void main(void)
     SCI_lockAutobaud(SCIA_BASE);
 #endif
 
-
-    for(;;)
-    {
-        string *s = new_string();
-        do{
-            receivedChar = SCI_readCharBlockingFIFO(SCIA_BASE);
-            rxStatus = SCI_getRxStatus(SCIA_BASE);
-            if((rxStatus & SCI_RXSTATUS_ERROR) != 0)
-            {
-                //
-                //If Execution stops here there is some error
-                //Analyze SCI_getRxStatus() API return value
-                //
-                ESTOP0;
-             }
-            if(receivedChar != 0) append(s, receivedChar);
-        }while(receivedChar != 0);
+    Float receivedValue;
+    unsigned char byteArr[4];
+    while(1){
+        // all 4 bytes must be received to proceed further
+        // read float through SCI
+        SCI_readFloatBlockingFIFO(&receivedValue);
 
 
+        //pass by reference- s changes the value in place
+        // do some calculations
+        calculation(&receivedValue);
 
 
-        //
-        // Echo back the characters.
-        SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, strlen(msg));
-        SCI_writeCharArray(SCIA_BASE, (uint16_t*)s->arr, (s->ptr)/2);
-//        SCI_writeCharBlockingFIFO(SCIA_BASE, receivedChar);
+        //converts Float variable 'receivedValue' to byte array
+        floatToByteArray(&receivedValue, byteArr);
 
-
+        // send this byte arr over the channel
+        //inbuilt function
+        //defined in sci.h
+        SCI_writeCharArray(SCIA_BASE, (uint16_t*)byteArr, 4);
     }
+
+
 }
 
 //
